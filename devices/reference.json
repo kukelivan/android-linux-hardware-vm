@@ -1,0 +1,8 @@
+{
+  "device": "ASUS ROG Phone 8 (AI2401)",
+  "soc_family": "Qualcomm Snapdragon",
+  "android_release": "16",
+  "kernel_release": "6.1.112-android14-11-g76e6db6a5f77-ab13748698",
+  "btf_sha256": "d8e52e8121f127b772b6d6dc5d952e4092b25c1cceb2ae27de91300c852cb75e",
+  "scope": "Reference port, not a universal compatibility list. Root and loadable modules are required; the boot kernel is unchanged."
+}

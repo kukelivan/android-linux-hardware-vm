@@ -1,0 +1,70 @@
+# kapi_abi.tsv - single source of truth for the kernel symbols gh_hugepage_reserve
+# resolves at runtime and the ABI-compatible signatures it expects per version.
+#
+# Consumed by:
+#   abi/gen_kapi.awk  -> abi/kapi_abi.gen.h   (KAPI_SYMBOLS x-macro compiled into
+#                                              the .ko; expected table for helper)
+#   abi/kapi_check.c  (boot-time BTF preflight: compares these vs the running
+#                      kernel's /sys/kernel/btf/vmlinux, emits disable_kapi list)
+#
+# Scope: only Gunyah-capable GKI bases matter -> 6.1 / 6.6 / 6.12 / 6.18. The
+# 5.10/5.15 .ko builds are Magisk-template placeholders (no Gunyah), not covered.
+#
+# Types are DESUGARED canonical (kCFI compares canonical types; typedefs and
+# __bitwise are transparent): gfp_t -> uint, acr_flags_t -> uint. So a row that
+# matches by these tokens is guaranteed not to kCFI-trap; a semantic value change
+# under an unchanged canonical type (e.g. 6.18 migratetype->acr_flags) is NOT
+# visible here and is handled by the module's CONTIG_RANGE version wrapper.
+#
+# kind:
+#   func  - resolved by kprobe/kallsyms, called through a kapi function pointer.
+#   hook  - Android vendor tracepoint; the kernel calls our probe back. The
+#           helper WOULD look it up as the BTF typedef btf_trace_<symbol> (its
+#           FUNC_PROTO has an EXTRA leading "void *data"; 'params' below omits it)
+#           - but GKI vmlinux BTF ships NO btf_trace_* typedefs, so on-device the
+#           hook is NOT BTF-checkable and reads "not BTF-checkable" (never
+#           disabled). Row kept for documentation + the manual disable_kapi path;
+#           the module registers this hook by name at runtime regardless. Its
+#           TP_PROTO is identical across 6.1-6.18 (audited), so drift risk is nil.
+#
+# Version range is [since, until):  '*' since = from 6.1;  '*' until = open-ended.
+#
+# Columns (TAB-separated): symbol  since  until  kind  ret  params  feature
+symbol	since	until	kind	ret	params	feature
+alloc_contig_pages	*	*	func	page*	ulong,uint,int,nodemask_t*	id1
+alloc_contig_range	*	*	func	int	ulong,ulong,uint,uint	id2,id3
+prep_compound_page	*	*	func	void	page*,uint	id1,id2,id3
+folio_isolate_lru	*	6.3.0	func	int	folio*	id3
+folio_isolate_lru	6.3.0	*	func	bool	folio*	id3
+reclaim_pages	*	6.6.0	func	ulong	list_head*	id3
+reclaim_pages	6.6.0	6.12.0	func	ulong	list_head*,bool	id3
+reclaim_pages	6.12.0	*	func	ulong	list_head*	id3
+lru_add_drain_all	*	*	func	void	void	id2,id3
+drop_slab	*	*	func	void	void	id2,id3
+drain_all_pages	*	*	func	void	zone*	core
+# cma (pool_want_with_cma reservoir): until 6.16 only - the 6.16 migratetype rework
+# (MIGRATE_ISOLATE standalone bit) changes pageblock-flag semantics and 6.18 makes
+# the setter static; the module compile-gates the feature off at >=6.16 (v9 path),
+# so a >=6.16 kernel needs no row (preflight skips, module never resolves).
+set_pageblock_migratetype	*	6.16.0	func	void	page*,int	cma
+get_pfnblock_flags_mask	*	6.16.0	func	ulong	page*,ulong,ulong	cma
+mem_cgroup_from_task	*	*	func	mem_cgroup*	task_struct*	A
+try_to_free_mem_cgroup_pages	*	6.12.0	func	ulong	mem_cgroup*,ulong,uint,uint	A
+try_to_free_mem_cgroup_pages	6.12.0	*	func	ulong	mem_cgroup*,ulong,uint,uint,int*	A
+android_vh_free_one_page_bypass	*	*	hook	void	page*,zone*,int,int,int,bool*	hook
+# moveable_to_cma levers. static_key_enable/disable + kallsyms_lookup_name back
+# the restrict_cma_redirect flip (stable signatures, all versions). The two gfp
+# adjust hooks are ABI-era exclusive: android_vh_alloc_flags_cma_adjust on
+# [6.1,6.12) (called after the built-in ALLOC_CMA decision), replaced by
+# android_vh_calc_alloc_flags on [6.12,*) (3-arg, called before). At most one
+# exists per kernel; the module registers whichever it finds by name. Like every
+# hook they are not BTF-checkable (no btf_trace typedef) so never auto-disabled.
+# NOTE: the restrict_cma_redirect DATA symbol itself is intentionally absent -
+# it has no call signature / btf_trace typedef, so a row would make the preflight
+# hunt a FUNC that isn't there and falsely disable the lever; it is resolved by
+# kallsyms_lookup_name at runtime instead.
+static_key_enable	*	*	func	void	static_key*	mtc
+static_key_disable	*	*	func	void	static_key*	mtc
+kallsyms_lookup_name	*	*	func	ulong	char*	mtc
+android_vh_alloc_flags_cma_adjust	*	6.12.0	hook	void	uint,uint*	mtc
+android_vh_calc_alloc_flags	6.12.0	*	hook	void	uint,uint*,bool*	mtc

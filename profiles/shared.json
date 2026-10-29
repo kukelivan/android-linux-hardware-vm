@@ -1,0 +1,10 @@
+{
+  "name": "shared",
+  "initial_mib": 4096,
+  "maximum_mib": 4096,
+  "kernel": "legacy",
+  "host_modules": [
+    "gunyah_ram_prepare"
+  ],
+  "description": "128 MiB shared parcels; fixed large guest."
+}

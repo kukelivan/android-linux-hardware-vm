@@ -1,0 +1,10 @@
+{
+  "name": "grow",
+  "initial_mib": 256,
+  "maximum_mib": 4096,
+  "kernel": "custom",
+  "host_modules": [
+    "gunyah_grow_host"
+  ],
+  "description": "Start small; add 128 MiB blocks without rebooting the guest."
+}

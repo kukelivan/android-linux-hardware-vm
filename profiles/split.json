@@ -1,0 +1,10 @@
+{
+  "name": "split",
+  "initial_mib": 1664,
+  "maximum_mib": 1792,
+  "kernel": "legacy",
+  "host_modules": [
+    "gunyah_ram_labels"
+  ],
+  "description": "Two main parcels; PID-scoped legacy label adapter."
+}

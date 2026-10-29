@@ -1,0 +1,8 @@
+{
+  "name": "classic",
+  "initial_mib": 1024,
+  "maximum_mib": 1024,
+  "kernel": "legacy",
+  "host_modules": [],
+  "description": "Low memory, one main parcel; simplest recovery path."
+}

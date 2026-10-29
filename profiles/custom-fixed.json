@@ -1,0 +1,10 @@
+{
+  "name": "custom-fixed",
+  "initial_mib": 3072,
+  "maximum_mib": 4096,
+  "kernel": "custom",
+  "host_modules": [
+    "gunyah_ram_prepare"
+  ],
+  "description": "Custom guest kernel; fixed allocation."
+}
